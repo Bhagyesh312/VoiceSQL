@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VoiceSQL — Talk to Your Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles/main.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-grid"></div>
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo" id="logo">
+      <div class="logo-mark">
+        <!-- Outer ring -->
+        <svg class="logo-svg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg1" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#818cf8"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+            <linearGradient id="lg2" x1="44" y1="0" x2="0" y2="44" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#c4b5fd"/>
+              <stop offset="100%" stop-color="#818cf8"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="1.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Outer hexagon ring -->
+          <polygon class="logo-hex-outer" points="22,2 39,11.5 39,32.5 22,42 5,32.5 5,11.5"
+            fill="none" stroke="url(#lg1)" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- Middle hexagon -->
+          <polygon class="logo-hex-mid" points="22,9 33,15.5 33,28.5 22,35 11,28.5 11,15.5"
+            fill="url(#lg2)" opacity="0.15" stroke="url(#lg1)" stroke-width="1" stroke-linejoin="round"/>
+          <!-- Inner pulse ring -->
+          <circle class="logo-pulse" cx="22" cy="22" r="7" fill="none" stroke="url(#lg1)" stroke-width="1" opacity="0.5"/>
+          <!-- Center dot -->
+          <circle class="logo-core" cx="22" cy="22" r="3.5" fill="url(#lg1)" filter="url(#glow)"/>
+          <!-- Orbit dot -->
+          <circle class="logo-orbit-dot" cx="22" cy="13" r="1.8" fill="#22d3ee" opacity="0.9"/>
+        </svg>
+      </div>
+      <span class="logo-text">VoiceSQL</span>
+    </div>
+    <div class="header-right">
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="status-pill" id="status-pill">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-label-text" id="status-label">Connecting…</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">        <span class="theme-icon-dark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </span>
+        <span class="theme-icon-light hidden">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── APP SHELL ── -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="app-shell">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Upload card -->
+    <div class="card upload-card" id="upload-card">
+      <div class="card-header">
+        <span class="card-icon">⬆</span>
+        <span class="card-title">Dataset</span>
+      </div>
+
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-inner">
+          <div class="drop-anim" id="drop-anim">
+            <svg class="drop-svg" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.3"/>
+              <path d="M32 44V22M22 32l10-10 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="drop-title">Drop your file here</p>
+          <p class="drop-sub">CSV or SQLite · Max 50MB</p>
+          <button class="browse-btn" id="browse-btn">Browse Files</button>
+        </div>
+        <input type="file" id="file-input" accept=".csv,.db,.sqlite,.sqlite3" hidden/>
+      </div>
+
+      <!-- Upload progress (hidden initially) -->
+      <div class="upload-progress hidden" id="upload-progress">
+        <div class="progress-track">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-name" id="progress-name"></span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+      </div>
+
+      <!-- Uploaded file chip (hidden initially) -->
+      <div class="file-chip hidden" id="file-chip">
+        <span class="file-chip-icon">📂</span>
+        <span class="file-chip-name" id="file-chip-name"></span>
+        <button class="file-chip-remove" id="file-chip-remove" title="Remove">✕</button>
+      </div>
+    </div>
+
+    <!-- Schema card -->
+    <div class="card schema-card hidden" id="schema-card">
+      <div class="card-header">
+        <span class="card-icon">⎇</span>
+        <span class="card-title">Schema</span>
+        <span class="schema-badge" id="schema-badge"></span>
+      </div>
+      <div class="schema-body" id="schema-body"></div>
+    </div>
+
+    <!-- Suggestions card -->
+    <div class="card suggest-card hidden" id="suggest-card">
+      <div class="card-header">
+        <span class="card-icon">💡</span>
+        <span class="card-title">Try asking…</span>
+      </div>
+      <div class="suggest-list" id="suggest-list"></div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <main class="main-area">
+
+    <!-- Welcome screen -->
+    <div class="welcome" id="welcome">
+      <div class="welcome-hero">
+        <div class="hero-rings">
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+          <div class="hero-center">
+            <svg viewBox="0 0 48 48" fill="none" width="36" height="36">
+              <path d="M24 4a20 20 0 100 40A20 20 0 0024 4z" fill="url(#hg)"/>
+              <path d="M16 24l5 5 11-11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="hg" x1="4" y1="4" x2="44" y2="44">
+                  <stop offset="0%" stop-color="#6366f1"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+        <h1 class="hero-title">Talk to Your Data</h1>
+        <p class="hero-sub">Upload any CSV or database, then ask questions in plain English — or speak them aloud.</p>
+        <div class="hero-pills">
+          <span class="hero-pill">🎤 Voice input</span>
+          <span class="hero-pill">🧠 AI-powered SQL</span>
+          <span class="hero-pill">📊 Live charts</span>
+          <span class="hero-pill">🔒 Read-only safe</span>
+        </div>
+        <!-- Mobile upload CTA — hidden on desktop -->
+        <button class="hero-upload-btn" id="hero-upload-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Upload a File to Begin
+        </button>
+        <div class="hero-arrow desktop-only">← Upload a file to begin</div>
+      </div>
+    </div>
+
+    <!-- Query area (shown after upload) -->
+    <div class="query-panel hidden" id="query-panel">
+
+      <!-- Query input row -->
+      <div class="query-box">
+        <div class="query-box-inner">
+          <div class="query-input-wrap">
+            <span class="query-prefix">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </span>
+            <input
+              id="query-input"
+              class="query-input"
+              type="text"
+              placeholder="e.g. Show drama movies with rating above 8…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <div class="query-cursor"></div>
+          </div>
+
+          <div class="query-actions">
+            <button class="btn-mic" id="btn-mic" title="Voice input">
+              <span class="mic-default">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/>
+                </svg>
+              </span>
+              <span class="mic-listening hidden">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </span>
+            </button>
+
+            <button class="btn-run" id="btn-run">
+              <span class="btn-run-text">Run Query</span>
+              <span class="btn-run-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mic listening indicator -->
+        <div class="listening-strip hidden" id="listening-strip">
+          <span class="ls-dot"></span>
+          <span class="ls-text">Listening — speak your query now</span>
+          <span class="ls-cancel" id="ls-cancel">Cancel</span>
+        </div>
+
+        <!-- SQL result display -->
+        <div class="sql-strip hidden" id="sql-strip">
+          <span class="sql-strip-label">SQL</span>
+          <code class="sql-strip-code" id="sql-strip-code"></code>
+          <span class="sql-strip-source" id="sql-strip-source"></span>
+          <button class="sql-copy-btn" id="sql-copy-btn" title="Copy">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile info panels (schema + suggestions shown inline on mobile) -->
+      <div class="mobile-info" id="mobile-info" style="display:none">
+        <!-- Mobile file chip -->
+        <div class="mobile-file-row" id="mobile-file-row">
+          <span class="mobile-file-icon">📂</span>
+          <span class="mobile-file-name" id="mobile-file-name"></span>
+          <button class="mobile-file-remove" id="mobile-file-remove" title="Remove">✕</button>
+        </div>
+
+        <!-- Mobile schema -->
+        <div class="mobile-section" id="mobile-schema-section">
+          <div class="mobile-section-header" id="mobile-schema-toggle">
+            <span class="mobile-section-icon">⎇</span>
+            <span class="mobile-section-title">Schema</span>
+            <span class="mobile-schema-badge" id="mobile-schema-badge"></span>
+            <svg class="mobile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="mobile-section-body hidden" id="mobile-schema-body"></div>
+        </div>
+
+        <!-- Mobile suggestions -->
+        <div class="mobile-section" id="mobile-suggest-section">
+          <div class="mobile-section-header" id="mobile-suggest-toggle">
+            <span class="mobile-section-icon">💡</span>
+            <span class="mobile-section-title">Try asking…</span>
+            <svg class="mobile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="mobile-section-body hidden" id="mobile-suggest-body"></div>
+        </div>
+      </div>
+
+      <!-- Loader -->
+      <div class="loader-panel hidden" id="loader-panel">        <div class="loader-dots">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <p class="loader-msg">Generating SQL and querying data…</p>
+      </div>
+
+      <!-- Results panel -->
+      <div class="results-panel hidden" id="results-panel">
+        <!-- Toolbar -->
+        <div class="results-toolbar">
+          <div class="results-meta">
+            <span class="results-label">Results</span>
+            <span class="results-count-badge" id="results-count-badge"></span>
+          </div>
+          <div class="toolbar-right">
+            <div class="chart-type-selector hidden" id="chart-type-selector">
+              <button class="chart-type-btn active" data-type="bar" title="Bar chart">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/>
+                </svg>
+              </button>
+              <button class="chart-type-btn" data-type="pie" title="Pie chart">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                </svg>
+              </button>
+              <button class="chart-type-btn" data-type="line" title="Line chart">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </button>
+            </div>
+            <button class="tool-btn" id="btn-chart" title="Toggle chart">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/>
+              </svg>
+              Chart
+            </button>
+            <button class="tool-btn" id="btn-export" title="Export CSV">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-panel hidden" id="chart-panel">
+          <canvas id="result-chart"></canvas>
+        </div>
+
+        <!-- Table -->
+        <div class="table-scroll" id="table-scroll">
+          <table class="data-table">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination hidden" id="pagination">
+          <button class="page-btn" id="btn-prev">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Prev
+          </button>
+          <span class="page-info" id="page-info"></span>
+          <button class="page-btn" id="btn-next">
+            Next
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error panel -->
+      <div class="error-panel hidden" id="error-panel">
+        <div class="error-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <p class="error-title" id="error-title">Couldn't understand query</p>
+        <p class="error-desc" id="error-desc"></p>
+        <div class="error-chips" id="error-chips"></div>
+      </div>
+
+      <!-- Empty panel -->
+      <div class="empty-panel hidden" id="empty-panel">
+        <div class="empty-icon">∅</div>
+        <p class="empty-title">No results found</p>
+        <p class="empty-desc">Try adjusting your query or conditions.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="scripts/api.js"></script>
+<script src="scripts/voice.js"></script>
+<script src="scripts/chart-renderer.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>
