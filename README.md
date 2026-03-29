@@ -1,23 +1,37 @@
 # VoiceSQL — Talk to Your Data
 
-A voice-powered natural language to SQL assistant. Upload any CSV or SQLite database and ask questions in plain English — or speak them aloud.
+A voice-powered natural language to SQL assistant. Upload any CSV or SQLite database and ask questions in plain English — or speak them aloud. Get instant results with charts, pagination, and CSV export.
+
+![VoiceSQL](https://img.shields.io/badge/Python-Flask-blue) ![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
 - 🎤 Voice input via Web Speech API
-- 🧠 AI-powered SQL generation using Groq (Llama 3.3)
+- 🧠 AI-powered SQL generation using Groq (Llama 3.3-70b)
 - 📊 Auto-generated bar, pie, and line charts
 - 🔒 Read-only — no destructive queries allowed
-- 🌙 Dark / light mode
-- 📱 Fully responsive for mobile
+- 🌙 Dark / light mode toggle
+- 📱 Fully responsive — works on mobile
 - ⚡ Rule-based fallback if AI is unavailable
+- 📄 Pagination for large result sets
+- 💾 Export results as CSV
 
-## Quick Start
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | HTML, CSS, Vanilla JS |
+| Backend | Python, Flask |
+| AI | Groq API (Llama 3.3-70b-versatile) |
+| Charts | Chart.js |
+| Voice | Web Speech API |
+
+## Quick Start (Local)
 
 **1. Clone the repo**
 ```bash
-git clone https://github.com/your-username/voicesql.git
-cd voicesql
+git clone https://github.com/Bhagyesh312/VoiceSQL.git
+cd VoiceSQL
 ```
 
 **2. Install dependencies**
@@ -26,16 +40,14 @@ pip install -r backend/requirements.txt
 ```
 
 **3. Set your API key**
-
-Copy the example env file and add your key:
 ```bash
 cp .env.example .env
 ```
-Then open `.env` and set:
+Open `.env` and add your key:
 ```
 GROQ_API_KEY=your_groq_api_key_here
 ```
-Get a free key at [console.groq.com](https://console.groq.com)
+Get a free key at [console.groq.com](https://console.groq.com) — no credit card needed.
 
 **4. Run**
 ```bash
@@ -47,31 +59,45 @@ python backend/app.py
 http://localhost:5000
 ```
 
-> On Windows you can just double-click `start.bat` after setting your key in `.env`
+> On Windows — just double-click `start.bat` after setting your key in `.env`
+
+## Deploy to Render (Free)
+
+This project is pre-configured for [Render.com](https://render.com).
+
+1. Fork or push this repo to your GitHub
+2. Go to [render.com](https://render.com) → New → Web Service
+3. Connect your GitHub repo
+4. Add environment variable: `GROQ_API_KEY` = your key
+5. Click Deploy — `render.yaml` handles the rest
+
+> Netlify will NOT work — this project requires a Python backend. Use Render, Railway, or Koyeb.
 
 ## Project Structure
 
 ```
-voicesql/
+VoiceSQL/
 ├── backend/
-│   ├── app.py                  # Flask server
-│   ├── requirements.txt
+│   ├── app.py                  # Flask server & API routes
+│   ├── requirements.txt        # Python dependencies
 │   └── services/
 │       ├── text_to_sql.py      # Groq AI + rule-based SQL engine
 │       ├── schema_analyzer.py  # CSV/SQLite schema parser
-│       └── query_executor.py   # Safe SQL executor
+│       └── query_executor.py   # Safe read-only SQL executor
 ├── frontend/
-│   ├── index.html
+│   ├── index.html              # Main page
 │   ├── scripts/
 │   │   ├── app.js              # Main app logic
 │   │   ├── api.js              # Backend API calls
 │   │   ├── chart-renderer.js   # Chart.js wrapper
 │   │   └── voice.js            # Web Speech API
 │   └── styles/
-│       └── main.css
+│       └── main.css            # Full stylesheet (dark + light mode)
 ├── sample_KING.csv             # Sample movie dataset to test with
 ├── start.bat                   # Windows one-click launcher
-└── .env.example                # Environment variable template
+├── .env.example                # Environment variable template
+├── render.yaml                 # Render.com deployment config
+└── Procfile                    # Process file for deployment
 ```
 
 ## Example Queries
@@ -85,13 +111,16 @@ Top 10 highest rated films
 Movies between 1990 and 2000
 How many action movies are there?
 Movies directed by Nolan
-Movies after 2010 ordered by rating
-Horror movies with votes greater than 50000
+Average rating of horror movies
+Movies with votes greater than 100000
 ```
 
-## Deploy to Render
+## Environment Variables
 
-1. Push to GitHub
-2. Connect repo on [render.com](https://render.com)
-3. Add environment variable: `GROQ_API_KEY`
-4. Deploy — `render.yaml` handles the rest
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GROQ_API_KEY` | Groq API key for AI SQL generation | Yes |
+
+## License
+
+MIT
