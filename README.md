@@ -2,13 +2,14 @@
 
 A voice-powered natural language to SQL assistant. Upload any CSV or SQLite database and ask questions in plain English — or speak them aloud. Get instant results with charts, pagination, and CSV export.
 
-![VoiceSQL](https://img.shields.io/badge/Python-Flask-blue) ![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/Python-Flask-blue) ![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![RAG](https://img.shields.io/badge/RAG-FAISS%20%2B%20sentence--transformers-purple) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
 - 🎤 Voice input via Web Speech API
 - 🧠 AI-powered SQL generation using Groq (Llama 3.3-70b)
-- 📊 Auto-generated bar, pie, and line charts
+- � RAG pipeline — schema-aware context retrieval using FAISS + sentence-transformers
+- �📊 Auto-generated bar, pie, and line charts
 - 🔒 Read-only — no destructive queries allowed
 - 🌙 Dark / light mode toggle
 - 📱 Fully responsive — works on mobile
@@ -23,8 +24,18 @@ A voice-powered natural language to SQL assistant. Upload any CSV or SQLite data
 | Frontend | HTML, CSS, Vanilla JS |
 | Backend | Python, Flask |
 | AI | Groq API (Llama 3.3-70b-versatile) |
+| RAG | FAISS + sentence-transformers (all-MiniLM-L6-v2) |
 | Charts | Chart.js |
 | Voice | Web Speech API |
+
+## How RAG Works
+
+When you ask a question, before calling the LLM the system:
+1. Embeds your question into a vector using `all-MiniLM-L6-v2`
+2. Searches a FAISS index for the most relevant schema facts and few-shot examples
+3. Injects that context into the Groq prompt for more accurate SQL generation
+
+The index is built automatically after every file upload.
 
 ## Quick Start (Local)
 
@@ -38,12 +49,13 @@ cd VoiceSQL
 ```bash
 pip install -r backend/requirements.txt
 ```
+> First run will download the RAG embedding model (~90MB, one-time only)
 
 **3. Set your API key**
 ```bash
 cp .env.example .env
 ```
-Open `.env` and add your key:
+Open `.env` and set:
 ```
 GROQ_API_KEY=your_groq_api_key_here
 ```
@@ -59,13 +71,13 @@ python backend/app.py
 http://localhost:5000
 ```
 
-> On Windows — just double-click `start.bat` after setting your key in `.env`
+> On Windows — double-click `start.bat` after setting your key in `.env`
 
 ## Deploy to Render (Free)
 
 This project is pre-configured for [Render.com](https://render.com).
 
-1. Fork or push this repo to your GitHub
+1. Fork this repo to your GitHub
 2. Go to [render.com](https://render.com) → New → Web Service
 3. Connect your GitHub repo
 4. Add environment variable: `GROQ_API_KEY` = your key
@@ -81,20 +93,21 @@ VoiceSQL/
 │   ├── app.py                  # Flask server & API routes
 │   ├── requirements.txt        # Python dependencies
 │   └── services/
+│       ├── rag_pipeline.py     # FAISS + sentence-transformers RAG
 │       ├── text_to_sql.py      # Groq AI + rule-based SQL engine
 │       ├── schema_analyzer.py  # CSV/SQLite schema parser
 │       └── query_executor.py   # Safe read-only SQL executor
 ├── frontend/
-│   ├── index.html              # Main page
+│   ├── index.html
 │   ├── scripts/
-│   │   ├── app.js              # Main app logic
-│   │   ├── api.js              # Backend API calls
-│   │   ├── chart-renderer.js   # Chart.js wrapper
-│   │   └── voice.js            # Web Speech API
+│   │   ├── app.js
+│   │   ├── api.js
+│   │   ├── chart-renderer.js
+│   │   └── voice.js
 │   └── styles/
-│       └── main.css            # Full stylesheet (dark + light mode)
-├── sample_KING.csv             # Sample movie dataset to test with
-├── start.bat                   # Windows one-click launcher
+│       └── main.css
+├── sample_KING.csv             # Sample movie dataset
+├── start.bat                   # Windows launcher
 ├── .env.example                # Environment variable template
 ├── render.yaml                 # Render.com deployment config
 └── Procfile                    # Process file for deployment

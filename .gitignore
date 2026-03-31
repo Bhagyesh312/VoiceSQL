@@ -24,6 +24,10 @@ backend/uploads/*.csv
 backend/uploads/*.sqlite
 backend/uploads/*.sqlite3
 
+# RAG model cache — downloaded automatically on first run
+sentence_transformers_cache/
+.cache/
+
 # OS
 .DS_Store
 Thumbs.db

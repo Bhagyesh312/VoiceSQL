@@ -1,4 +1,5 @@
 @echo off
+title VoiceSQL
 
 :: Load GROQ_API_KEY from .env file
 if exist .env (
@@ -19,5 +20,4 @@ echo Starting VoiceSQL...
 echo Open your browser at: http://localhost:5000
 echo.
 
-start "" "http://localhost:5000"
 python backend\app.py

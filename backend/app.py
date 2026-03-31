@@ -22,6 +22,7 @@ _load_env()
 from services.schema_analyzer import SchemaAnalyzer
 from services.query_executor import QueryExecutor
 from services.text_to_sql import TextToSQL
+from services.rag_pipeline import RAGPipeline
 
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
@@ -40,6 +41,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 schema_analyzer = SchemaAnalyzer(UPLOAD_FOLDER)
 query_executor  = QueryExecutor()
 text_to_sql     = TextToSQL(anthropic_api_key=os.environ.get("GROQ_API_KEY"))
+rag             = RAGPipeline()
 
 
 def allowed(filename):
@@ -69,6 +71,8 @@ def upload():
     f.save(path)
     try:
         result = schema_analyzer.analyze(path, filename)
+        # Build RAG index from extracted schema
+        rag.build_index(result["tables"])
         return jsonify({"message": "Uploaded successfully", "filename": filename,
                         "tables": result["tables"], "db_path": result["db_path"]}), 200
     except Exception as e:
@@ -88,7 +92,9 @@ def query():
     if not os.path.exists(db_path): return jsonify({"error": "DB not found, re-upload"}), 400
 
     try:
-        sql_result = text_to_sql.convert(question=question, schema=schema)
+        # Retrieve relevant schema context via RAG before calling LLM
+        rag_context = rag.retrieve(question) if rag.is_ready else ""
+        sql_result = text_to_sql.convert(question=question, schema=schema, rag_context=rag_context)
         if not sql_result["success"]:
             return jsonify({"error": "Could not understand question",
                             "suggestions": sql_result.get("suggestions", [])}), 422

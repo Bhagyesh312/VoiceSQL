@@ -35,26 +35,31 @@ class TextToSQL:
             except ImportError:
                 logger.warning("groq not installed — rule-based only")
 
-    def convert(self, question: str, schema: list) -> dict:
+    def convert(self, question: str, schema: list, rag_context: str = "") -> dict:
         if self._client:
-            r = self._groq(question, schema)
+            r = self._groq(question, schema, rag_context)
             if r["success"]:
                 return r
             logger.warning("Groq failed, falling back to rule-based")
         return self._rule(question, schema)
 
     # ── Groq API ───────────────────────────────────────────────
-    def _groq(self, question, schema):
+    def _groq(self, question, schema, rag_context: str = ""):
         schema_text = "\n".join(
             f"Table '{t['name']}' columns: " +
             ", ".join(f"{c['name']} ({c['type']})" for c in t["columns"])
             for t in schema
         )
+
+        rag_block = ""
+        if rag_context:
+            rag_block = f"\nRELEVANT CONTEXT (schema facts + examples):\n{rag_context}\n"
+
         prompt = f"""You are an expert SQLite query generator. Your job is to convert natural language questions into valid SQLite SELECT statements.
 
 DATABASE SCHEMA:
 {schema_text}
-
+{rag_block}
 STRICT RULES:
 1. Output ONLY the raw SQL SELECT statement — no markdown, no backticks, no explanation, no comments.
 2. NEVER use DROP, DELETE, UPDATE, INSERT, ALTER, CREATE, PRAGMA or any destructive statement.
@@ -64,7 +69,8 @@ STRICT RULES:
 6. Always prefer specific columns over SELECT * when the question asks for specific info.
 7. Use LIMIT 100 as default when no limit is specified and result could be large.
 8. For aggregations (count, average, sum, max, min), use appropriate aliases.
-9. If the question cannot be answered with the given schema, output exactly: CANNOT_GENERATE
+9. For multi-table queries, use proper JOIN syntax with ON conditions.
+10. If the question cannot be answered with the given schema, output exactly: CANNOT_GENERATE
 
 Question: {question}
 SQL:"""
