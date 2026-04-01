@@ -1,0 +1,9 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+pandas>=2.0.0
+groq>=1.0.0
+werkzeug>=3.0.0
+gunicorn>=21.2.0
+sentence-transformers>=2.7.0
+faiss-cpu>=1.7.4
+numpy>=1.26.0
