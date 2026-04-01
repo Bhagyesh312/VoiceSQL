@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VoiceSQL — Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#f1f5ff;font-family:'Inter',sans-serif;color:#0f172a}
+
+/* ── BACKGROUND ── */
+.bg{position:fixed;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 50% 80% at 5% 50%,rgba(99,102,241,0.12),transparent 70%),
+    radial-gradient(ellipse 45% 70% at 95% 50%,rgba(8,145,178,0.1),transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 100%,rgba(139,92,246,0.07),transparent 70%)}
+.grid{position:fixed;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);
+  background-size:44px 44px}
+
+/* ── PAGE ── */
+.page{position:relative;z-index:1;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 18px;gap:10px}
+
+/* ── HEADER ── */
+.hdr{text-align:center;flex-shrink:0}
+.hdr h1{font-size:24px;font-weight:900;letter-spacing:-0.04em;margin-bottom:5px;color:#0f172a;line-height:1}
+.hdr h1 em{font-style:normal;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 40%,#0891b2 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hdr p{font-size:9px;color:#94a3b8;letter-spacing:0.16em;text-transform:uppercase;font-weight:600}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#16a34a;margin-right:6px;vertical-align:middle;animation:blink 2s ease-in-out infinite}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;align-items:stretch;gap:0;width:100%;max-width:1400px;flex-shrink:0}
+
+/* ── STAGE ── */
+.stage{display:flex;flex-direction:column;gap:6px;align-items:stretch;flex:1;min-width:0;padding:0 2px}
+.stage-lbl{
+  font-size:7.5px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;
+  text-align:center;margin-bottom:4px;padding:3px 0;
+  color:#6366f1;border-bottom:2px solid rgba(99,102,241,0.15);
+}
+
+/* ── CARD ── */
+.card{
+  background:#ffffff;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  padding:11px 13px 10px;
+  position:relative;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.05);
+  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.25s ease;
+  cursor:default;
+  overflow:hidden;
+}
+/* colored top bar */
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.c-ind::before{background:linear-gradient(90deg,#6366f1,#818cf8)}
+.c-cyn::before{background:linear-gradient(90deg,#0891b2,#22d3ee)}
+.c-grn::before{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.c-amb::before{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.c-red::before{background:linear-gradient(90deg,#dc2626,#f87171)}
+.c-llm::before{background:linear-gradient(90deg,#4f46e5,#7c3aed,#0891b2)}
+
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.12)}
+.c-ind:hover{box-shadow:0 12px 32px rgba(99,102,241,0.2)}
+.c-cyn:hover{box-shadow:0 12px 32px rgba(8,145,178,0.2)}
+.c-grn:hover{box-shadow:0 12px 32px rgba(22,163,74,0.2)}
+.c-amb:hover{box-shadow:0 12px 32px rgba(217,119,6,0.2)}
+.c-red:hover{box-shadow:0 12px 32px rgba(220,38,38,0.2)}
+
+.c-llm{
+  background:linear-gradient(160deg,#f5f3ff 0%,#eff6ff 60%,#ecfeff 100%);
+  border-color:#c7d2fe;
+  animation:llmpulse 3s ease-in-out infinite;
+}
+
+/* ── CARD CONTENT ── */
+.ci{font-size:16px;display:block;margin-bottom:5px;line-height:1;margin-top:3px}
+.cn{font-size:12.5px;font-weight:800;line-height:1.15;margin-bottom:4px;letter-spacing:-0.02em}
+.cf{
+  font-size:7.5px;font-family:'JetBrains Mono',monospace;font-weight:600;
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 7px;border-radius:5px;margin-bottom:5px;
+  background:#f8fafc;color:#475569;border:1px solid #e2e8f0;
+  letter-spacing:0.01em;
+}
+.cd{font-size:9.5px;color:#475569;line-height:1.55;font-weight:400}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.chip{
+  font-size:7.5px;padding:2px 7px;border-radius:5px;
+  font-weight:700;font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.03em;border:1px solid transparent;
+}
+
+/* ── COLORS ── */
+.t-ind{color:#4338ca}.t-cyn{color:#0e7490}.t-grn{color:#15803d}
+.t-amb{color:#92400e}.t-red{color:#991b1b}.t-llm{color:#3730a3}
+
+.ch-ind{background:#eef2ff;color:#4338ca;border-color:#c7d2fe}
+.ch-cyn{background:#ecfeff;color:#0e7490;border-color:#a5f3fc}
+.ch-grn{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.ch-amb{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.ch-red{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+
+/* ── BADGE ── */
+.badge{
+  position:absolute;top:-1px;right:10px;
+  font-size:6.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;
+  padding:2px 8px;border-radius:0 0 6px 6px;
+  background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-top:none;
+}
+
+/* ── ARROW ── */
+.arr{flex-shrink:0;width:46px;display:flex;align-items:center;justify-content:center;padding:0 2px}
+.arr svg{overflow:visible;display:block}
+
+/* ── ANIMATIONS ── */
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px rgba(22,163,74,0.8)}50%{opacity:0.3;box-shadow:none}}
+@keyframes llmpulse{
+  0%,100%{box-shadow:0 2px 16px rgba(99,102,241,0.15),0 0 0 0 rgba(99,102,241,0)}
+  50%{box-shadow:0 8px 32px rgba(99,102,241,0.25),0 0 0 5px rgba(99,102,241,0.06)}
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(18px) scale(0.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes stageIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+.stage{animation:stageIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+.stage:nth-child(1){animation-delay:.06s}
+.stage:nth-child(3){animation-delay:.12s}
+.stage:nth-child(5){animation-delay:.18s}
+.stage:nth-child(7){animation-delay:.24s}
+.stage:nth-child(9){animation-delay:.30s}
+.stage:nth-child(11){animation-delay:.36s}
+
+.card{animation:cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+.stage .card:nth-child(2){animation-delay:.1s}
+.stage .card:nth-child(3){animation-delay:.18s}
+.stage .card:nth-child(4){animation-delay:.26s}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="grid"></div>
+<div class="page">
+
+  <div class="hdr">
+    <h1>Voice<em>SQL</em> — AI Pipeline Architecture</h1>
+    <p><span class="dot"></span>Groq · Llama 3.3-70b · RAG + FAISS · sentence-transformers · Flask 3.0 · Chart.js · Web Speech API</p>
+  </div>
+
+  <div class="pipeline">
+
+    <!-- ① INPUT -->
+    <div class="stage">
+      <div class="stage-lbl">① Input</div>
+      <div class="card c-ind">
+        <span class="ci">🎤</span>
+        <div class="cn t-ind">Voice Input</div>
+        <div class="cf">voice.js</div>
+        <div class="cd">Web Speech API. Real-time transcript on final result.</div>
+        <div class="chips"><span class="chip ch-ind">SpeechRecognition</span><span class="chip ch-ind">browser</span></div>
+      </div>
+      <div class="card c-ind">
+        <span class="ci">📝</span>
+        <div class="cn t-ind">Text Input</div>
+        <div class="cf">app.js</div>
+        <div class="cd">Typed query. Enter key or Run Query button.</div>
+        <div class="chips"><span class="chip ch-ind">Enter key</span></div>
+      </div>
+      <div class="card c-amb">
+        <span class="ci">📂</span>
+        <div class="cn t-amb">File Upload</div>
+        <div class="cf">/api/upload</div>
+        <div class="cd">CSV or SQLite. Max 50MB. Triggers schema + RAG build.</div>
+        <div class="chips"><span class="chip ch-amb">.csv</span><span class="chip ch-amb">.db</span><span class="chip ch-amb">50MB</span></div>
+      </div>
+    </div>
+
+    <div class="arr" id="a1"></div>
+
+    <!-- ② FLASK -->
+    <div class="stage" style="justify-content:center">
+      <div class="stage-lbl">② Backend</div>
+      <div class="card c-cyn">
+        <span class="ci">⚙️</span>
+        <div class="cn t-cyn">Flask Server</div>
+        <div class="cf">app.py</div>
+        <div class="cd">Orchestrates full pipeline. Serves frontend as static files. Auto-loads .env for API key.</div>
+        <div class="chips"><span class="chip ch-cyn">Flask 3.0</span><span class="chip ch-cyn">CORS</span><span class="chip ch-cyn">gunicorn</span></div>
+      </div>
+    </div>
+
+    <div class="arr" id="a2"></div>
+
+    <!-- ③ RAG -->
+    <div class="stage">
+      <div class="stage-lbl">③ RAG Pipeline</div>
+      <div class="card c-amb">
+        <span class="ci">🧬</span>
+        <div class="cn t-amb">Schema Analyzer</div>
+        <div class="cf">schema_analyzer.py</div>
+        <div class="cd">CSV → SQLite via pandas. Extracts tables, columns, types, PKs.</div>
+        <div class="chips"><span class="chip ch-amb">pandas</span><span class="chip ch-amb">sqlite3</span></div>
+      </div>
+      <div class="card c-cyn">
+        <span class="ci">🔍</span>
+        <div class="cn t-cyn">FAISS Index</div>
+        <div class="cf">rag_pipeline.py</div>
+        <div class="cd">384-dim embeddings. Schema chunks + 8 few-shots. Top-6 retrieval.</div>
+        <div class="chips"><span class="chip ch-cyn">MiniLM-L6-v2</span><span class="chip ch-cyn">top-k=6</span></div>
+      </div>
+    </div>
+
+    <div class="arr" id="a3"></div>
+
+    <!-- ④ LLM -->
+    <div class="stage">
+      <div class="stage-lbl">④ AI · SQL Gen</div>
+      <div class="card c-llm">
+        <span class="ci">🤖</span>
+        <div class="cn t-llm">Groq LLM</div>
+        <div class="cf">text_to_sql.py · _groq()</div>
+        <div class="cd">Llama 3.3-70b. Schema + RAG context → raw SELECT. temp=0, max_tokens=300.</div>
+        <div class="chips"><span class="chip ch-ind">llama-3.3-70b</span><span class="chip ch-cyn">temp=0</span><span class="chip ch-ind">Groq API</span></div>
+      </div>
+      <div class="card c-red">
+        <div class="badge">⚠ Fallback</div>
+        <span class="ci">🔧</span>
+        <div class="cn t-red">Rule-Based Engine</div>
+        <div class="cf">text_to_sql.py · _rule()</div>
+        <div class="cd">Regex NLP. Year, numeric, genre, director, aggregates. Zero latency.</div>
+        <div class="chips"><span class="chip ch-red">deterministic</span><span class="chip ch-red">zero latency</span></div>
+      </div>
+    </div>
+
+    <div class="arr" id="a4"></div>
+
+    <!-- ⑤ SECURITY + EXEC -->
+    <div class="stage">
+      <div class="stage-lbl">⑤ Security · Exec</div>
+      <div class="card c-red">
+        <span class="ci">�</span>
+        <div class="cn t-red">SQL Guard</div>
+        <div class="cf">query_executor.py</div>
+        <div class="cd">Blocks DROP, DELETE, UPDATE, INSERT, ALTER. Only SELECT passes.</div>
+        <div class="chips"><span class="chip ch-red">read-only</span><span class="chip ch-red">allowlist</span></div>
+      </div>
+      <div class="card c-cyn">
+        <span class="ci">▶</span>
+        <div class="cn t-cyn">Query Executor</div>
+        <div class="cf">query_executor.py</div>
+        <div class="cd">Runs SQL on SQLite. Returns columns[], rows[]. Auto chart hint: pie ≤6, bar >6.</div>
+        <div class="chips"><span class="chip ch-cyn">sqlite3</span><span class="chip ch-cyn">chart hint</span></div>
+      </div>
+    </div>
+
+    <div class="arr" id="a5"></div>
+
+    <!-- ⑥ RESULTS -->
+    <div class="stage">
+      <div class="stage-lbl">⑥ Results</div>
+      <div class="card c-grn">
+        <span class="ci">🧾</span>
+        <div class="cn t-grn">SQL Strip</div>
+        <div class="cf">app.js</div>
+        <div class="cd">Generated SQL + source badge (Groq / Rule-Based). One-click copy.</div>
+        <div class="chips"><span class="chip ch-grn">copy SQL</span><span class="chip ch-grn">source badge</span></div>
+      </div>
+      <div class="card c-grn">
+        <span class="ci">📋</span>
+        <div class="cn t-grn">Data Table</div>
+        <div class="cf">app.js</div>
+        <div class="cd">Paginated 50 rows/page. Sticky header. NULL display.</div>
+        <div class="chips"><span class="chip ch-grn">paginated</span><span class="chip ch-grn">50/page</span></div>
+      </div>
+      <div class="card c-grn">
+        <span class="ci">📊</span>
+        <div class="cn t-grn">Charts + Export</div>
+        <div class="cf">chart-renderer.js</div>
+        <div class="cd">Bar / Pie / Line via Chart.js. Manual type selector. CSV export.</div>
+        <div class="chips"><span class="chip ch-grn">Bar</span><span class="chip ch-grn">Pie</span><span class="chip ch-grn">Line</span><span class="chip ch-grn">CSV</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var CFG=[
+    {id:'a1',color:'#6366f1',delay:100},
+    {id:'a2',color:'#0891b2',delay:220},
+    {id:'a3',color:'#7c3aed',delay:340},
+    {id:'a4',color:'#6366f1',delay:460},
+    {id:'a5',color:'#16a34a',delay:580},
+  ];
+
+  function h2r(h){return parseInt(h.slice(1,3),16)+','+parseInt(h.slice(3,5),16)+','+parseInt(h.slice(5,7),16)}
+
+  function build(cfg){
+    var el=document.getElementById(cfg.id);
+    if(!el)return;
+    var W=el.offsetWidth||46,H=el.offsetHeight||200;
+    var cy=H/2,x1=4,x2=W-10,rgb=h2r(cfg.color);
+
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width',W);svg.setAttribute('height',H);
+    svg.style.cssText='overflow:visible;display:block';
+
+    var fid='f'+cfg.id,gid='g'+cfg.id,g2='g2'+cfg.id;
+    var defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+    defs.innerHTML=
+      '<filter id="'+fid+'" x="-60%" y="-60%" width="220%" height="220%">'+
+        '<feGaussianBlur stdDeviation="2.5" result="b"/>'+
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
+      '</filter>'+
+      '<linearGradient id="'+gid+'" x1="0%" y1="0%" x2="100%" y2="0%">'+
+        '<stop offset="0%" stop-color="rgba('+rgb+',0.15)"/>'+
+        '<stop offset="50%" stop-color="rgba('+rgb+',0.55)"/>'+
+        '<stop offset="100%" stop-color="rgba('+rgb+',0.85)"/>'+
+      '</linearGradient>'+
+      '<linearGradient id="'+g2+'" x1="0%" y1="0%" x2="100%" y2="0%">'+
+        '<stop offset="0%" stop-color="rgba('+rgb+',0.04)"/>'+
+        '<stop offset="100%" stop-color="rgba('+rgb+',0.12)"/>'+
+      '</linearGradient>';
+    svg.appendChild(defs);
+
+    // subtle background band
+    var band=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    band.setAttribute('x',x1);band.setAttribute('y',cy-8);
+    band.setAttribute('width',x2-x1);band.setAttribute('height',16);
+    band.setAttribute('rx','8');band.setAttribute('fill','url(#'+g2+')');
+    svg.appendChild(band);
+
+    // main track line
+    var track=document.createElementNS('http://www.w3.org/2000/svg','line');
+    track.setAttribute('x1',x1);track.setAttribute('y1',cy);
+    track.setAttribute('x2',x2);track.setAttribute('y2',cy);
+    track.setAttribute('stroke','url(#'+gid+')');
+    track.setAttribute('stroke-width','2.5');
+    track.setAttribute('stroke-linecap','round');
+    svg.appendChild(track);
+
+    // arrowhead
+    var tip=x2+2;
+    var head=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    head.setAttribute('points',tip+','+cy+' '+(tip-10)+','+(cy-5.5)+' '+(tip-10)+','+(cy+5.5));
+    head.setAttribute('fill',cfg.color);
+    head.setAttribute('opacity','0.9');
+    svg.appendChild(head);
+
+    el.appendChild(svg);
+
+    // smooth traveling dot with soft trail
+    function spawnDot(){
+      var trail=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      var dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      trail.setAttribute('r','7');trail.setAttribute('fill','rgba('+rgb+',0.15)');
+      dot.setAttribute('r','4.5');dot.setAttribute('fill',cfg.color);dot.setAttribute('filter','url(#'+fid+')');
+      svg.appendChild(trail);svg.appendChild(dot);
+      var frac=0,speed=0.02+Math.random()*0.008;
+      (function step(){
+        frac+=speed;
+        if(frac>=1){
+          try{svg.removeChild(dot);svg.removeChild(trail);}catch(e){}
+          setTimeout(spawnDot,350+Math.random()*550);
+          return;
+        }
+        var px=x1+(x2-x1)*frac;
+        var a=frac<0.1?frac/0.1:frac>0.9?(1-frac)/0.1:1;
+        dot.setAttribute('cx',px);dot.setAttribute('cy',cy);dot.setAttribute('opacity',a);
+        trail.setAttribute('cx',px-8);trail.setAttribute('cy',cy);trail.setAttribute('opacity',a*0.5);
+        requestAnimationFrame(step);
+      })();
+    }
+    setTimeout(spawnDot,cfg.delay+600);
+  }
+
+  window.addEventListener('load',function(){CFG.forEach(build);});
+  setTimeout(function(){CFG.forEach(build);},300);
+})();
+</script>
+</body>
+</html>
