@@ -1,3 +1,12 @@
+---
+title: VoiceSQL
+emoji: 🎤
+colorFrom: indigo
+colorTo: cyan
+sdk: docker
+pinned: false
+---
+
 # VoiceSQL — Talk to Your Data
 
 A voice-powered natural language to SQL assistant. Upload any CSV or SQLite database and ask questions in plain English — or speak them aloud. Get instant results with charts, pagination, and CSV export.
