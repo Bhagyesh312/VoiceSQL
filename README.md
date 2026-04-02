@@ -11,7 +11,9 @@ pinned: false
 
 A voice-powered natural language to SQL assistant. Upload any CSV or SQLite database and ask questions in plain English — or speak them aloud. Get instant results with charts, pagination, and CSV export.
 
-![Python](https://img.shields.io/badge/Python-Flask-blue) ![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![RAG](https://img.shields.io/badge/RAG-FAISS%20%2B%20sentence--transformers-purple) ![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/Python-Flask-blue) ![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![RAG](https://img.shields.io/badge/RAG-FAISS%20%2B%20sentence--transformers-purple) ![License](https://img.shields.io/badge/license-MIT-green) [![Live Demo](https://img.shields.io/badge/🤗%20Live%20Demo-Hugging%20Face-yellow)](https://huggingface.co/spaces/BhagyeshShah11/VoiceSQL)
+
+**🚀 Live Demo: [huggingface.co/spaces/BhagyeshShah11/VoiceSQL](https://huggingface.co/spaces/BhagyeshShah11/VoiceSQL)**
 
 ## Features
 
