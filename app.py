@@ -1,6 +1,13 @@
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+
+# Add backend directory to path so imports work
+BASE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(BASE, "backend"))
+
+# Set working context so relative paths inside backend work
+os.chdir(os.path.join(BASE, "backend"))
+
 from app import app
 
 if __name__ == "__main__":
